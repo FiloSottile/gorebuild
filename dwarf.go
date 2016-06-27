@@ -28,8 +28,6 @@ func getTable(file string) (*gosym.Table, error) {
 			if symtab, err = sect.Data(); err != nil {
 				return nil, err
 			}
-		} else {
-			return nil, errors.New("empty .gosymtab")
 		}
 		if sect := obj.Section(".gopclntab"); sect != nil {
 			if pclntab, err = sect.Data(); err != nil {
@@ -54,8 +52,6 @@ func getTable(file string) (*gosym.Table, error) {
 			if symtab, err = sect.Data(); err != nil {
 				return nil, err
 			}
-		} else {
-			return nil, errors.New("empty __gosymtab")
 		}
 		if sect := obj.Section("__gopclntab"); sect != nil {
 			if pclntab, err = sect.Data(); err != nil {
