@@ -43,7 +43,8 @@ func main() {
 	for _, file := range bins {
 		path, err := getMainPath(file)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Skipping %s: %s", file, err)
+			continue
 		}
 		importPath := stripPath(path)
 		if *dry {
