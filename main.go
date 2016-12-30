@@ -9,7 +9,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
+)
+
+var (
+	goPathBin = filepath.Join(build.Default.GOPATH, "bin")
+	goPathSrc = filepath.Join(build.Default.GOPATH, "src")
 )
 
 func main() {
@@ -18,7 +22,7 @@ func main() {
 
 	bins := flag.Args()
 	if len(bins) == 0 {
-		fi, err := ioutil.ReadDir(build.Default.GOPATH + "/bin")
+		fi, err := ioutil.ReadDir(goPathBin)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -26,7 +30,7 @@ func main() {
 			if f.IsDir() {
 				continue
 			}
-			bins = append(bins, build.Default.GOPATH+"/bin/"+f.Name())
+			bins = append(bins, filepath.Join(goPathBin, f.Name()))
 		}
 	}
 
@@ -46,9 +50,12 @@ func main() {
 			log.Printf("Skipping %s: %s", file, err)
 			continue
 		}
-		importPath := stripPath(path)
+		importPath, err := filepath.Rel(goPathSrc, filepath.Dir(path))
+		if err != nil {
+			log.Fatal(err)
+		}
 		if *dry {
-			fmt.Println(stripPath(path))
+			fmt.Println(importPath)
 		} else {
 			cmd := exec.Command("go", "install", "-v", importPath)
 			cmd.Env = append(os.Environ(), "GOBIN="+binDir)
@@ -59,16 +66,13 @@ func main() {
 				log.Fatal(err)
 			}
 			for _, f := range fi {
-				err := os.Rename(filepath.Join(binDir, f.Name()), build.Default.GOPATH+"/bin/"+f.Name())
+				err := os.Rename(
+					filepath.Join(binDir, f.Name()),
+					filepath.Join(goPathBin, f.Name()))
 				if err != nil {
 					log.Fatal(err)
 				}
 			}
 		}
 	}
-}
-
-func stripPath(path string) string {
-	dir := filepath.Dir(path)
-	return strings.TrimPrefix(dir, build.Default.GOPATH+"/src/")
 }
