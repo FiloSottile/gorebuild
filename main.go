@@ -34,14 +34,16 @@ func main() {
 		}
 	}
 
-	var binDir string
+	var (
+		tmpBuildDir string
+		err         error
+	)
 	if !*dry {
-		dir, err := ioutil.TempDir("", "gorebuild")
+		tmpBuildDir, err = ioutil.TempDir("", "gorebuild")
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer os.RemoveAll(dir)
-		binDir = dir
+		defer os.RemoveAll(tmpBuildDir)
 	}
 
 	for _, file := range bins {
@@ -56,22 +58,22 @@ func main() {
 		}
 		if *dry {
 			fmt.Println(importPath)
-		} else {
-			cmd := exec.Command("go", "install", "-v", importPath)
-			cmd.Env = append(os.Environ(), "GOBIN="+binDir)
-			cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-			cmd.Run()
-			fi, err := ioutil.ReadDir(binDir)
+			continue
+		}
+		cmd := exec.Command("go", "install", "-v", importPath)
+		cmd.Env = append(os.Environ(), "GOBIN="+tmpBuildDir)
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+		cmd.Run()
+		fi, err := ioutil.ReadDir(tmpBuildDir)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, f := range fi {
+			err := os.Rename(
+				filepath.Join(tmpBuildDir, f.Name()),
+				filepath.Join(goPathBin, f.Name()))
 			if err != nil {
 				log.Fatal(err)
-			}
-			for _, f := range fi {
-				err := os.Rename(
-					filepath.Join(binDir, f.Name()),
-					filepath.Join(goPathBin, f.Name()))
-				if err != nil {
-					log.Fatal(err)
-				}
 			}
 		}
 	}
