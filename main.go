@@ -46,6 +46,8 @@ func main() {
 		defer os.RemoveAll(tmpBuildDir)
 	}
 
+	var wereInstallErrors bool
+
 	for _, file := range bins {
 		path, err := getMainPath(file)
 		if err != nil {
@@ -63,7 +65,10 @@ func main() {
 		cmd := exec.Command("go", "install", "-v", importPath)
 		cmd.Env = append(os.Environ(), "GOBIN="+tmpBuildDir)
 		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-		cmd.Run()
+		if err := cmd.Run(); err != nil {
+			wereInstallErrors = true
+			continue
+		}
 		fi, err := ioutil.ReadDir(tmpBuildDir)
 		if err != nil {
 			log.Fatal(err)
@@ -76,5 +81,9 @@ func main() {
 				log.Fatal(err)
 			}
 		}
+	}
+
+	if wereInstallErrors {
+		os.Exit(1)
 	}
 }
