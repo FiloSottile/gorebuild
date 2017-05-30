@@ -18,6 +18,7 @@ var (
 
 func main() {
 	dry := flag.Bool("n", false, "don't build, just print the package names")
+	verbose := flag.Bool("v", false, "run `go install` with the -v flag")
 	flag.Parse()
 
 	bins := flag.Args()
@@ -62,7 +63,13 @@ func main() {
 			fmt.Println(importPath)
 			continue
 		}
-		cmd := exec.Command("go", "install", "-v", importPath)
+
+		goArgs := []string{"install"}
+		if *verbose {
+			goArgs = append(goArgs, "-v")
+		}
+		goArgs = append(goArgs, importPath)
+		cmd := exec.Command("go", goArgs...)
 		cmd.Env = append(os.Environ(), "GOBIN="+tmpBuildDir)
 		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 		if err := cmd.Run(); err != nil {
